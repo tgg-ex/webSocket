@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<style type="text/css">
+    input#chat {
+        width: 410px
+    }
+    #console-container {
+        width: 400px;
+    }
+
+    #console {
+        border: 1px solid #CCCCCC;
+        border-right-color: #999999;
+        border-bottom-color: #999999;
+        height: 170px;
+        overflow-y: scroll;
+        padding: 5px;
+        width: 100%;
+    }
+
+    #console p {
+        padding: 0;
+        margin: 0;
+    }
+</style>
+<body>
+<div>
+    <p>
+        <input type="text" placeholder="type and press enter to chat" id="chat" />
+    </p>
+    <div id="console-container">
+        <div id="console"></div>
+    </div>
+
+    <script type="text/javascript">
+        var Console = {};
+        var mess={};
+        var userList=[];
+        var senderId=prompt("请输入你的账号");
+        Console.log = (function(message) {
+            var console = document.getElementById('console');
+            var p = document.createElement('p');
+            p.style.wordWrap = 'break-word';
+            p.innerHTML = message;
+            console.appendChild(p);
+            while (console.childNodes.length > 25) {
+                console.removeChild(console.firstChild);
+            }
+            console.scrollTop = console.scrollHeight;
+        });
+        var Chat = {};
+        Chat.socket = null;
+        Chat.connect = (function(host) {
+            if ('WebSocket' in window) {
+                Chat.socket = new WebSocket(host);
+            } else if ('MozWebSocket' in window) {
+                Chat.socket = new MozWebSocket(host);
+            } else {
+                Console.log('错误');
+                return;
+            }
+            Chat.socket.onopen = function() {
+                Console.log('打开连接');
+                document.getElementById('chat').onkeydown = function(event) {
+                    if (event.keyCode == 13) {
+                        Chat.sendMessage();
+                    }
+                };
+            };
+            Chat.socket.onclose = function() {
+                document.getElementById('chat').onkeydown = null;
+                Console.log('关闭.');
+            };
+            Chat.socket.onmessage = function(message) {
+                Console.log(message.data);
+            };
+        });
+        Chat.initialize = function() {
+            Chat.connect('ws://127.0.0.1:8080/webSocket/'+senderId);
+        };
+        Chat.sendMessage = (function() {
+
+            var message = document.getElementById('chat').value;
+
+            var receiverIds=prompt("请输入接收者账号用逗号分隔");
+
+            userList=receiverIds.split(",");
+
+            mess.userList=userList;
+
+            mess.mess=message;
+
+            var strmee=JSON.stringify(mess)
+
+            if (message != '') {
+                //发送
+                Chat.socket.send(strmee);
+                //清空输入框
+                document.getElementById('chat').value='';
+            }
+        });
+        Chat.initialize();
+    </script>
+</div>
+</body>
+</html>
